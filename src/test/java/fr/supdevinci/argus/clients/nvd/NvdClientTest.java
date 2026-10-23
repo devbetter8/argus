@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -15,6 +16,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.http.HttpMethod.GET;
+import static org.springframework.test.web.client.ExpectedCount.times;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.queryParam;
@@ -47,7 +49,7 @@ class NvdClientTest {
         server.expect(requestTo("https://nvd.test/cves"
                         + "?pubStartDate=2026-10-01T00:00:00.000"
                         + "&pubEndDate=2026-10-22T12:30:00.000"
-                        + "&resultsPerPage=2000&startIndex=0&noRejected"))
+                        + "&resultsPerPage=500&startIndex=0&noRejected"))
                 .andExpect(method(GET))
                 .andExpect(header("apiKey", "test-key"))
                 .andRespond(withSuccess(new ClassPathResource("nvd/page.json"), MediaType.APPLICATION_JSON));
@@ -90,7 +92,8 @@ class NvdClientTest {
     void fetchPublishedBetween_readsAllPages() {
         // 3 résultats au total : 2 sur la première page, 1 sur la seconde.
         server.expect(queryParam("startIndex", "0"))
-                .andRespond(withSuccess(page(0, 3, cve("CVE-2026-0001"), cve("CVE-2026-0002")), MediaType.APPLICATION_JSON));
+                .andRespond(withSuccess(page(0, 3, cve("CVE-2026-0001"), cve("CVE-2026-0002")),
+                        MediaType.APPLICATION_JSON));
         server.expect(queryParam("startIndex", "2"))
                 .andRespond(withSuccess(page(2, 3, cve("CVE-2026-0003")), MediaType.APPLICATION_JSON));
 
@@ -116,12 +119,37 @@ class NvdClientTest {
     }
 
     @Test
+    void fetchPublishedBetween_retriesAfterTemporaryFailure() {
+        server.expect(queryParam("startIndex", "0"))
+                .andRespond(withStatus(HttpStatus.SERVICE_UNAVAILABLE));
+        server.expect(queryParam("startIndex", "0"))
+                .andRespond(withSuccess(page(0, 1, cve("CVE-2026-0001")), MediaType.APPLICATION_JSON));
+
+        List<NvdCvePageResponse.Cve> cves = nvdClient.fetchPublishedBetween(START, END);
+
+        assertThat(cves).hasSize(1);
+        server.verify();
+    }
+
+    @Test
+    void fetchPublishedBetween_throwsWhenAllRetriesFail() {
+        server.expect(times(NvdClient.MAX_RETRIES + 1), queryParam("startIndex", "0"))
+                .andRespond(withStatus(HttpStatus.SERVICE_UNAVAILABLE));
+
+        assertThatThrownBy(() -> nvdClient.fetchPublishedBetween(START, END))
+                .isInstanceOf(HttpServerErrorException.ServiceUnavailable.class);
+        server.verify();
+    }
+
+    @Test
     void fetchPublishedBetween_throwsWhenApiKeyIsRefused() {
         server.expect(header("apiKey", "test-key"))
                 .andRespond(withStatus(HttpStatus.FORBIDDEN));
 
         assertThatThrownBy(() -> nvdClient.fetchPublishedBetween(START, END))
                 .isInstanceOf(HttpClientErrorException.Forbidden.class);
+        // Une seule requête : une clé refusée ne sert à rien de réessayer.
+        server.verify();
     }
 
     private static String page(int startIndex, int totalResults, String... cves) {
