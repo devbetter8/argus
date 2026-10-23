@@ -1,9 +1,17 @@
 spring:
   application:
     name: argus
+  config:
+    # Charge les variables du fichier .env s'ils existent.
+    import: optional:file:.env[.properties]
 
 argus:
   kev:
     url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
   epss:
     url: https://api.first.org/data/v1/epss
+  nvd:
+    url: https://services.nvd.nist.gov/rest/json/cves/2.0
+    api-key: ${NVD_API_KEY}
+    # La NVD recommande 6 secondes entre deux requêtes.
+    request-delay: 6s
