@@ -27,7 +27,8 @@ argus:
     # La NVD recommande 6 secondes entre deux requêtes.
     request-delay: 6s
   sync:
-    enabled: true
+    # Valeur par défaut : true. Mettre ARGUS_SYNC_ENABLED=false dans le .env pour la désactiver.
+    enabled: ${ARGUS_SYNC_ENABLED:true}
     # Délai avant le premier passage pour laisser l'application finir de démarrer.
     initial-delay: 10s
     interval: 24h
