@@ -4,6 +4,11 @@ spring:
   config:
     # Charge les variables du fichier .env s'il existe (clés d'API locales, jamais versionnées).
     import: optional:file:.env[.properties]
+  http:
+    clients:
+      connect-timeout: 10s
+      # Sans limite, une réponse bloquée empêcherait toute synchronisation suivante.
+      read-timeout: 2m
   jpa:
     hibernate:
       # Flyway crée le schéma. Hibernate vérifie seulement qu'il correspond aux entités.
