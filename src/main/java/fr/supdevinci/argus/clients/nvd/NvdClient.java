@@ -22,7 +22,7 @@ public class NvdClient {
     static final int PAGE_SIZE = 2000;
 
     /** Écart maximal autorisé par l'API entre la date de début et la date de fin. */
-    static final Duration MAX_DATE_RANGE = Duration.ofDays(120);
+    public static final Duration MAX_DATE_RANGE = Duration.ofDays(120);
 
     private static final DateTimeFormatter NVD_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
 
