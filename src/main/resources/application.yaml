@@ -4,6 +4,12 @@ spring:
   config:
     # Charge les variables du fichier .env s'ils existent.
     import: optional:file:.env[.properties]
+  jpa:
+    hibernate:
+      # Flyway crée le schéma. Hibernate vérifie seulement qu'il correspond aux entités.
+      ddl-auto: validate
+    # Évite de garder la connexion à la base ouverte pendant tout le traitement d'une requête HTTP.
+    open-in-view: false
 
 argus:
   kev:
