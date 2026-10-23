@@ -17,6 +17,10 @@ import fr.supdevinci.argus.entities.Vulnerability;
  * <p>
  * Une donnée manquante prend une valeur neutre : une faille pas encore évaluée
  * ne doit pas paraître moins dangereuse qu'elle ne l'est peut-être.
+ * <p>
+ * Pour une faille du catalogue KEV, le percentile EPSS est remplacé par 1 :
+ * EPSS prédit une exploitation or celle-ci est déjà constatée. EPSS met aussi
+ * plusieurs jours à réagir après l'ajout d'une faille au catalogue.
  */
 public final class PriorityCalculator {
 
@@ -29,6 +33,7 @@ public final class PriorityCalculator {
     static final double NEUTRAL_EPSS_PERCENTILE = 0.5;
 
     private static final double MAX_CVSS_SCORE = 10.0;
+    private static final double MAX_EPSS_PERCENTILE = 1.0;
 
     private PriorityCalculator() {
     }
@@ -37,9 +42,7 @@ public final class PriorityCalculator {
         double cvssScore = vulnerability.getCvss() == null
                 ? NEUTRAL_CVSS_SCORE
                 : vulnerability.getCvss().baseScore();
-        double epssPercentile = vulnerability.getEpssPercentile() == null
-                ? NEUTRAL_EPSS_PERCENTILE
-                : vulnerability.getEpssPercentile();
+        double epssPercentile = epssPercentile(vulnerability);
 
         double score = CVSS_WEIGHT * (cvssScore / MAX_CVSS_SCORE)
                 + EPSS_WEIGHT * epssPercentile;
@@ -52,5 +55,15 @@ public final class PriorityCalculator {
         }
 
         return (int) Math.round(score);
+    }
+
+    private static double epssPercentile(Vulnerability vulnerability) {
+        if (vulnerability.isKnownExploited()) {
+            return MAX_EPSS_PERCENTILE;
+        }
+        if (vulnerability.getEpssPercentile() == null) {
+            return NEUTRAL_EPSS_PERCENTILE;
+        }
+        return vulnerability.getEpssPercentile();
     }
 }
