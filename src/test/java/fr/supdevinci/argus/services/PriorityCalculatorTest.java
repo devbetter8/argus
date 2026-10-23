@@ -1,6 +1,7 @@
 package fr.supdevinci.argus.services;
 
 import fr.supdevinci.argus.entities.CvssScore;
+import fr.supdevinci.argus.entities.PriorityLevel;
 import fr.supdevinci.argus.entities.Vulnerability;
 import org.junit.jupiter.api.Test;
 
@@ -27,8 +28,21 @@ class PriorityCalculatorTest {
         Vulnerability exploited = vulnerability(7.8, 0.95);
         exploited.markAsKnownExploited(LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 22), false);
 
-        // 27,3 + 33,25 + 20 = 80,55
-        assertThat(PriorityCalculator.calculate(exploited)).isEqualTo(81);
+        // 27,3 + 35 (exploitation constatée) + 20 = 82,3
+        assertThat(PriorityCalculator.calculate(exploited)).isEqualTo(82);
+    }
+
+    @Test
+    void calculate_knownExploitedWithLowEpss_isCritical() {
+        // Cas réel : CVE ajoutée au catalogue KEV le jour même, EPSS pas encore à jour.
+        Vulnerability justAddedToKev = vulnerability(9.4, 0.45586);
+        justAddedToKev.markAsKnownExploited(LocalDate.of(2026, 10, 23), LocalDate.of(2026, 11, 13), false);
+
+        // 32,9 + 35 + 20 = 87,9
+        int score = PriorityCalculator.calculate(justAddedToKev);
+
+        assertThat(score).isEqualTo(88);
+        assertThat(PriorityLevel.fromScore(score)).isEqualTo(PriorityLevel.CRITICAL);
     }
 
     @Test
