@@ -2,7 +2,7 @@ spring:
   application:
     name: argus
   config:
-    # Charge les variables du fichier .env s'ils existent.
+    # Charge les variables du fichier .env s'il existe (clés d'API locales, jamais versionnées).
     import: optional:file:.env[.properties]
   jpa:
     hibernate:
@@ -21,3 +21,8 @@ argus:
     api-key: ${NVD_API_KEY}
     # La NVD recommande 6 secondes entre deux requêtes.
     request-delay: 6s
+  sync:
+    enabled: true
+    # Délai avant le premier passage pour laisser l'application finir de démarrer.
+    initial-delay: 10s
+    interval: 24h
