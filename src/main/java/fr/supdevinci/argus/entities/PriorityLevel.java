@@ -6,19 +6,25 @@ package fr.supdevinci.argus.entities;
  */
 public enum PriorityLevel {
 
-    CRITICAL(70),
-    HIGH(45),
-    MEDIUM(25),
-    LOW(0);
+    CRITICAL(70, 100),
+    HIGH(45, 69),
+    MEDIUM(25, 44),
+    LOW(0, 24);
 
     private final int minimumScore;
+    private final int maximumScore;
 
-    PriorityLevel(int minimumScore) {
+    PriorityLevel(int minimumScore, int maximumScore) {
         this.minimumScore = minimumScore;
+        this.maximumScore = maximumScore;
     }
 
     public int getMinimumScore() {
         return minimumScore;
+    }
+
+    public int getMaximumScore() {
+        return maximumScore;
     }
 
     /**
