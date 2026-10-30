@@ -15,6 +15,11 @@ spring:
       ddl-auto: validate
     # Évite de garder la connexion à la base ouverte pendant tout le traitement d'une requête HTTP.
     open-in-view: false
+  mvc:
+    problemdetails:
+      # Renvoie les erreurs au format ProblemDetail (RFC 9457) avec un corps JSON.
+      # Sans cette option, une ErrorResponseException ne renvoie que le statut HTTP.
+      enabled: true
 
 argus:
   kev:
